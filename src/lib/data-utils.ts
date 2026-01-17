@@ -288,6 +288,7 @@ export async function fetchWithTimeout(
     const response = await fetch(url, {
       ...fetchOptions,
       signal: controller.signal,
+      redirect: 'follow',
     })
     return response
   } catch (error) {
