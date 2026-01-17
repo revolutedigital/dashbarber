@@ -1,8 +1,0 @@
-export { DashboardHeader } from './DashboardHeader'
-export { SettingsPanel } from './SettingsPanel'
-export { GoalsSection } from './GoalsSection'
-export { KPISection } from './KPISection'
-export { MetricsSection } from './MetricsSection'
-export { ChartsSection } from './ChartsSection'
-export { FunnelComparison } from './FunnelComparison'
-export { CustomMetricsSection } from './CustomMetricsSection'
