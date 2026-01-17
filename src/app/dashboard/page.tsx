@@ -18,14 +18,11 @@ import {
 import { useDashboardConfig } from '@/hooks/useDashboardConfig'
 import { calculateFunnelTotals } from '@/lib/calculations'
 import { Funnel, MetaAdsData, FunnelTotals, ApiResponse, CustomMetric } from '@/types/metrics'
-import { FilterRule } from '@/types/funnel'
 
-// Funnel com cor
 interface FunnelWithColor extends Funnel {
   color?: string
 }
 
-// Lazy load dos modais para reduzir bundle inicial
 const CreateMetricModal = dynamic(
   () => import('@/components/modals/CreateMetricModal').then(mod => ({ default: mod.CreateMetricModal })),
   { ssr: false }
@@ -36,12 +33,7 @@ const CreateGoalModal = dynamic(
   { ssr: false }
 )
 
-const CreateFunnelModal = dynamic(
-  () => import('@/components/modals/CreateFunnelModal').then(mod => ({ default: mod.CreateFunnelModal })),
-  { ssr: false }
-)
-
-// Dados mock para demonstração
+// Dados mock para demonstracao
 const mockFunnels: Funnel[] = [
   {
     id: 'playbook_conv_frio',
@@ -63,10 +55,8 @@ export default function DashboardPage() {
   // Modais
   const [showMetricModal, setShowMetricModal] = useState(false)
   const [showGoalModal, setShowGoalModal] = useState(false)
-  const [showFunnelModal, setShowFunnelModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
 
-  // Hook de configuração
   const {
     config,
     isLoaded,
@@ -78,7 +68,6 @@ export default function DashboardPage() {
     calculateGoalProgress,
   } = useDashboardConfig()
 
-  // Fetch data com useCallback e AbortController para cleanup
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     try {
@@ -92,11 +81,10 @@ export default function DashboardPage() {
         }
       }
     } catch (error) {
-      // Ignore abort errors (expected on unmount)
       if (error instanceof Error && error.name === 'AbortError') {
         return
       }
-      console.log('Usando dados de demonstração')
+      console.log('Usando dados de demonstracao')
     } finally {
       setLoading(false)
     }
@@ -116,7 +104,6 @@ export default function DashboardPage() {
     }
   }, [fetchData])
 
-  // Memoize filtered data para evitar recálculos desnecessários
   const filteredData = useMemo((): MetaAdsData[] => {
     if (selectedFunnel === 'all') {
       return funnels.flatMap(f => f.data)
@@ -125,12 +112,10 @@ export default function DashboardPage() {
     return funnel?.data || []
   }, [funnels, selectedFunnel])
 
-  // Memoize totals calculation
   const totals = useMemo((): FunnelTotals => {
     return calculateFunnelTotals(filteredData)
   }, [filteredData])
 
-  // Memoize chart data transformation
   const chartData = useMemo(() => {
     return filteredData.map(d => ({
       day: d.day,
@@ -146,7 +131,6 @@ export default function DashboardPage() {
     }))
   }, [filteredData])
 
-  // Memoize getMetricValue para passar para componentes filhos
   const getMetricValue = useCallback((metricKey: string): number => {
     const customMetric = config.customMetrics.find(m => m.id === metricKey)
     if (customMetric) {
@@ -155,7 +139,6 @@ export default function DashboardPage() {
     return totals[metricKey as keyof FunnelTotals] || 0
   }, [config.customMetrics, calculateCustomMetric, totals])
 
-  // Callbacks memoizados para handlers
   const handleFunnelChange = useCallback((value: string) => {
     setSelectedFunnel(value)
   }, [])
@@ -184,44 +167,12 @@ export default function DashboardPage() {
     addCustomMetric(metric)
   }, [addCustomMetric])
 
-  // Funnel Modal handlers
-  const handleOpenFunnelModal = useCallback(() => {
-    setShowFunnelModal(true)
-  }, [])
-
-  const handleCloseFunnelModal = useCallback(() => {
-    setShowFunnelModal(false)
-  }, [])
-
-  const handleCreateFunnel = useCallback(async (funnelData: {
-    name: string
-    description?: string
-    color?: string
-    conversionMetric: string
-    rules: FilterRule[]
-  }) => {
-    try {
-      const response = await fetch('/api/funnels', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(funnelData),
-      })
-
-      if (response.ok) {
-        // Refresh data to include new funnel
-        fetchData()
-      }
-    } catch (error) {
-      console.error('Error creating funnel:', error)
-    }
-  }, [fetchData])
-
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-muted-foreground font-medium">Carregando dashboard...</p>
+          <div className="w-10 h-10 rounded-full border-3 border-primary border-t-transparent animate-spin" />
+          <p className="text-muted-foreground font-medium text-sm">Carregando...</p>
         </div>
       </div>
     )
@@ -229,7 +180,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Premium Header */}
       <DashboardHeader
         funnels={funnels}
         selectedFunnel={selectedFunnel}
@@ -239,86 +189,69 @@ export default function DashboardPage() {
         loading={loading}
         onRefresh={fetchData}
         usingMock={usingMock}
-        onCreateFunnel={handleOpenFunnelModal}
       />
 
-      {/* Main Content */}
-      <main className="max-w-[1600px] mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Status Bar */}
-        <div className="flex items-center justify-between text-sm mb-8">
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">
-              {usingMock ? 'Dados de demonstracao' : `${funnels.length} funis conectados`}
-            </span>
+        <div className="flex items-center justify-between text-sm mb-6">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <span>{usingMock ? 'Dados de demonstracao' : `${funnels.length} funis`}</span>
             {lastUpdated && (
-              <span className="text-muted-foreground">
-                Atualizado: {new Date(lastUpdated).toLocaleString('pt-BR')}
-              </span>
+              <>
+                <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                <span>Atualizado: {new Date(lastUpdated).toLocaleString('pt-BR')}</span>
+              </>
             )}
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Activity className="w-4 h-4" aria-hidden="true" />
+            <Activity className="w-4 h-4" />
             <span>{filteredData.length} registros</span>
           </div>
         </div>
 
-        {/* Content sections with mobile-first priority ordering */}
-        <div className="flex flex-col gap-8">
-          {/* KPI Hero Cards - First on mobile (most important) */}
-          <div className="order-1">
-            <KPISection totals={totals} />
-          </div>
+        {/* Content */}
+        <div className="space-y-8">
+          {/* KPIs */}
+          <KPISection totals={totals} />
 
-          {/* Painel de Configurações */}
+          {/* Settings Panel */}
           {showSettings && (
-            <div className="order-2 md:order-first">
-              <SettingsPanel
-                customMetrics={config.customMetrics}
-                onAddMetric={handleOpenMetricModal}
-                onAddGoal={handleOpenGoalModal}
-                onRemoveMetric={removeCustomMetric}
-              />
-            </div>
+            <SettingsPanel
+              customMetrics={config.customMetrics}
+              onAddMetric={handleOpenMetricModal}
+              onAddGoal={handleOpenGoalModal}
+              onRemoveMetric={removeCustomMetric}
+            />
           )}
 
-          {/* Metas */}
-          <div className="order-3 md:order-2">
-            <GoalsSection
-              goals={config.goals}
-              selectedFunnel={selectedFunnel}
-              getMetricValue={getMetricValue}
-              calculateGoalProgress={calculateGoalProgress}
-              onRemoveGoal={removeGoal}
-            />
-          </div>
+          {/* Goals */}
+          <GoalsSection
+            goals={config.goals}
+            selectedFunnel={selectedFunnel}
+            getMetricValue={getMetricValue}
+            calculateGoalProgress={calculateGoalProgress}
+            onRemoveGoal={removeGoal}
+          />
 
-          {/* Métricas Customizadas */}
-          <div className="order-4 md:order-3">
-            <CustomMetricsSection
-              customMetrics={config.customMetrics}
-              totals={totals}
-              calculateCustomMetric={calculateCustomMetric}
-            />
-          </div>
+          {/* Custom Metrics */}
+          <CustomMetricsSection
+            customMetrics={config.customMetrics}
+            totals={totals}
+            calculateCustomMetric={calculateCustomMetric}
+          />
 
-          {/* Alcance, Engajamento e Performance */}
-          <div className="order-5 md:order-5">
-            <MetricsSection totals={totals} />
-          </div>
+          {/* Metrics */}
+          <MetricsSection totals={totals} />
 
-          {/* Gráficos com Lazy Loading */}
-          <div className="order-6 md:order-6">
-            <ChartsSection chartData={chartData} />
-          </div>
+          {/* Charts */}
+          <ChartsSection chartData={chartData} />
 
-          {/* Comparativo de Funis */}
-          <div className="order-7 md:order-7">
-            <FunnelComparison funnels={funnels} selectedFunnel={selectedFunnel} />
-          </div>
+          {/* Funnel Comparison */}
+          <FunnelComparison funnels={funnels} selectedFunnel={selectedFunnel} />
         </div>
       </main>
 
-      {/* Modais com Lazy Loading */}
+      {/* Modals */}
       {showMetricModal && (
         <Suspense fallback={null}>
           <CreateMetricModal
@@ -337,16 +270,6 @@ export default function DashboardPage() {
             onSave={addGoal}
             funnels={funnels}
             customMetrics={config.customMetrics}
-          />
-        </Suspense>
-      )}
-
-      {showFunnelModal && (
-        <Suspense fallback={null}>
-          <CreateFunnelModal
-            open={showFunnelModal}
-            onClose={handleCloseFunnelModal}
-            onSave={handleCreateFunnel}
           />
         </Suspense>
       )}

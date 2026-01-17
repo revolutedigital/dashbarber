@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, memo } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 interface KPIHeroCardProps {
   title: string
@@ -9,22 +9,30 @@ interface KPIHeroCardProps {
   change?: number
   changeLabel?: string
   icon: ReactNode
-  gradient: 'primary' | 'success' | 'warning' | 'danger'
-  size?: 'default' | 'large'
+  variant: 'blue' | 'green' | 'purple' | 'orange'
 }
 
-const gradientClasses = {
-  primary: 'from-violet-600 to-indigo-600',
-  success: 'from-emerald-500 to-teal-500',
-  warning: 'from-amber-500 to-orange-500',
-  danger: 'from-rose-500 to-pink-500',
-}
-
-const glowClasses = {
-  primary: 'shadow-violet-500/25',
-  success: 'shadow-emerald-500/25',
-  warning: 'shadow-amber-500/25',
-  danger: 'shadow-rose-500/25',
+const variantStyles = {
+  blue: {
+    bg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+    iconBg: 'bg-white/20',
+    shadow: 'shadow-blue-500/20',
+  },
+  green: {
+    bg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    iconBg: 'bg-white/20',
+    shadow: 'shadow-emerald-500/20',
+  },
+  purple: {
+    bg: 'bg-gradient-to-br from-violet-500 to-purple-600',
+    iconBg: 'bg-white/20',
+    shadow: 'shadow-violet-500/20',
+  },
+  orange: {
+    bg: 'bg-gradient-to-br from-orange-500 to-red-500',
+    iconBg: 'bg-white/20',
+    shadow: 'shadow-orange-500/20',
+  },
 }
 
 export const KPIHeroCard = memo(function KPIHeroCard({
@@ -33,65 +41,63 @@ export const KPIHeroCard = memo(function KPIHeroCard({
   change,
   changeLabel,
   icon,
-  gradient,
-  size = 'default',
+  variant,
 }: KPIHeroCardProps) {
-  const isPositive = change && change > 0
-  const isNegative = change && change < 0
+  const styles = variantStyles[variant]
+  const isPositive = change !== undefined && change > 0
+  const isNegative = change !== undefined && change < 0
 
   return (
     <div
       className={`
         relative overflow-hidden rounded-2xl p-6
-        bg-gradient-to-br ${gradientClasses[gradient]}
-        shadow-2xl ${glowClasses[gradient]}
-        card-hover
-        ${size === 'large' ? 'col-span-2 p-8' : ''}
+        ${styles.bg}
+        shadow-xl ${styles.shadow}
+        transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]
       `}
     >
       {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
+      <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+      <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-black/10 rounded-full blur-xl" />
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+        <div className="flex items-start justify-between mb-6">
+          <div className={`p-3 rounded-xl ${styles.iconBg} backdrop-blur-sm`}>
             <div className="text-white [&>svg]:w-6 [&>svg]:h-6">
               {icon}
             </div>
           </div>
+
           {change !== undefined && (
             <div
               className={`
-                flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium
+                flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold
                 ${isPositive ? 'bg-white/20 text-white' : ''}
-                ${isNegative ? 'bg-white/20 text-white' : ''}
-                ${!isPositive && !isNegative ? 'bg-white/10 text-white/70' : ''}
+                ${isNegative ? 'bg-red-500/30 text-white' : ''}
+                ${!isPositive && !isNegative ? 'bg-white/10 text-white/80' : ''}
               `}
-              role="status"
-              aria-label={`${isPositive ? 'Aumento de' : isNegative ? 'Reducao de' : 'Variacao de'} ${Math.abs(change).toFixed(1)} por cento`}
             >
-              {isPositive && <TrendingUp className="w-4 h-4" aria-hidden="true" />}
-              {isNegative && <TrendingDown className="w-4 h-4" aria-hidden="true" />}
-              <span aria-hidden="true">{isPositive ? '+' : ''}{change?.toFixed(1)}%</span>
+              {isPositive && <ArrowUpRight className="w-3.5 h-3.5" />}
+              {isNegative && <ArrowDownRight className="w-3.5 h-3.5" />}
+              <span>{isPositive ? '+' : ''}{change?.toFixed(1)}%</span>
             </div>
           )}
         </div>
 
         {/* Value */}
-        <div className={`font-extrabold text-white mb-1 tracking-tight ${size === 'large' ? 'text-5xl' : 'text-4xl'}`}>
+        <div className="text-4xl font-extrabold text-white mb-2 number-display tracking-tight">
           {value}
         </div>
 
         {/* Title */}
-        <div className="text-white/80 font-medium text-base">
+        <div className="text-white/90 font-medium text-sm">
           {title}
         </div>
 
-        {/* Change label */}
+        {/* Subtitle */}
         {changeLabel && (
-          <div className="text-white/60 text-sm mt-2">
+          <div className="text-white/60 text-xs mt-1.5 uppercase tracking-wider">
             {changeLabel}
           </div>
         )}

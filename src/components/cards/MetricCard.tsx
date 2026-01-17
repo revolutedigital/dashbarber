@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, memo } from 'react'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 interface MetricCardProps {
   title: string
@@ -10,7 +10,6 @@ interface MetricCardProps {
   trend?: number
   icon?: ReactNode
   className?: string
-  variant?: 'default' | 'outline' | 'ghost'
 }
 
 export const MetricCard = memo(function MetricCard({
@@ -20,73 +19,57 @@ export const MetricCard = memo(function MetricCard({
   trend,
   icon,
   className = '',
-  variant = 'default',
 }: MetricCardProps) {
-  const getTrendIcon = () => {
-    if (trend === undefined) return null
-    if (trend > 0) return <TrendingUp className="w-4 h-4" />
-    if (trend < 0) return <TrendingDown className="w-4 h-4" />
-    return <Minus className="w-4 h-4" />
-  }
-
-  const getTrendColor = () => {
-    if (trend === undefined) return 'text-muted-foreground'
-    if (trend > 0) return 'text-emerald-500'
-    if (trend < 0) return 'text-rose-500'
-    return 'text-muted-foreground'
-  }
-
-  const variantClasses = {
-    default: 'bg-card border border-border/50 shadow-sm',
-    outline: 'bg-transparent border-2 border-border',
-    ghost: 'bg-muted/30 border-0',
-  }
+  const isPositive = trend !== undefined && trend > 0
+  const isNegative = trend !== undefined && trend < 0
 
   return (
     <div
       className={`
-        relative rounded-xl p-5 overflow-hidden
-        ${variantClasses[variant]}
-        card-hover group
-        ${className}
+        relative bg-card rounded-xl p-5 border border-border
+        transition-all duration-200 hover:border-primary/30 hover:shadow-lg
+        group ${className}
       `}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-[13px] font-semibold text-muted-foreground tracking-wide">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
         </span>
         {icon && (
-          <div className="p-2 rounded-lg bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors [&>svg]:w-5 [&>svg]:h-5">
+          <div className="p-2 rounded-lg bg-primary/5 text-primary group-hover:bg-primary/10 transition-colors [&>svg]:w-4 [&>svg]:h-4">
             {icon}
           </div>
         )}
       </div>
 
       {/* Value */}
-      <div className="text-[28px] font-bold tracking-tight text-foreground leading-none mb-2">
+      <div className="text-3xl font-bold text-foreground number-display mb-1">
         {value}
       </div>
 
-      {/* Subtitle & Trend */}
-      {(subtitle || trend !== undefined) && (
-        <div className="flex items-center gap-2">
-          {trend !== undefined && (
-            <div className={`flex items-center gap-1 text-sm font-medium ${getTrendColor()}`}>
-              {getTrendIcon()}
-              <span>{trend > 0 ? '+' : ''}{trend.toFixed(1)}%</span>
-            </div>
-          )}
-          {subtitle && (
-            <span className="text-[13px] text-muted-foreground">
-              {subtitle}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Hover accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      {/* Footer */}
+      <div className="flex items-center gap-2 mt-2">
+        {trend !== undefined && (
+          <div
+            className={`
+              flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full
+              ${isPositive ? 'text-emerald-600 bg-emerald-500/10' : ''}
+              ${isNegative ? 'text-red-600 bg-red-500/10' : ''}
+              ${!isPositive && !isNegative ? 'text-muted-foreground bg-muted' : ''}
+            `}
+          >
+            {isPositive && <TrendingUp className="w-3 h-3" />}
+            {isNegative && <TrendingDown className="w-3 h-3" />}
+            <span>{isPositive ? '+' : ''}{trend.toFixed(1)}%</span>
+          </div>
+        )}
+        {subtitle && (
+          <span className="text-xs text-muted-foreground">
+            {subtitle}
+          </span>
+        )}
+      </div>
     </div>
   )
 })
