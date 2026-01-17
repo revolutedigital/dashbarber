@@ -71,7 +71,12 @@ export default function DashboardPage() {
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     try {
-      const response = await fetch('/api/data', { signal })
+      const response = await fetch('/api/data', {
+        signal,
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+        },
+      })
       if (response.ok) {
         const result: ApiResponse = await response.json()
         if (result.funnels && result.funnels.length > 0) {

@@ -40,11 +40,13 @@ export const DashboardHeader = memo(function DashboardHeader({
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">
-                TrafficHub
+                DashBarber
               </h1>
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${usingMock ? 'bg-amber-500' : 'bg-emerald-500'} pulse-live`} />
-                <span className="text-xs text-muted-foreground font-medium">
+                <span className="text-[10px] text-muted-foreground">by RevData</span>
+                <span className="text-muted-foreground/30">|</span>
+                <div className={`w-1.5 h-1.5 rounded-full ${usingMock ? 'bg-amber-500' : 'bg-emerald-500'} pulse-live`} />
+                <span className="text-[10px] text-muted-foreground">
                   {usingMock ? 'Demo' : 'Live'}
                 </span>
               </div>
