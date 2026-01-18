@@ -55,13 +55,15 @@ export const PieChart = memo(function PieChart({
               <Tooltip
                 formatter={(value) => [formatValue(Number(value))]}
                 contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
+                  backgroundColor: '#1f2937',
+                  border: '1px solid #374151',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                   padding: '8px 12px',
                   fontSize: '12px',
                 }}
+                labelStyle={{ color: '#f3f4f6' }}
+                itemStyle={{ color: '#d1d5db' }}
               />
             </RechartsPieChart>
           </ResponsiveContainer>

@@ -59,13 +59,13 @@ export const AreaChart = memo(function AreaChart({
           />
           <XAxis
             dataKey="day"
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 10, fill: '#9ca3af' }}
             tickLine={false}
             axisLine={false}
             dy={8}
           />
           <YAxis
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 10, fill: '#9ca3af' }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => {
@@ -78,24 +78,26 @@ export const AreaChart = memo(function AreaChart({
           <Tooltip
             formatter={(value, name) => [formatValue(Number(value)), name]}
             contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151',
               borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
               padding: '8px 12px',
               fontSize: '12px',
             }}
             labelStyle={{
-              color: 'hsl(var(--foreground))',
+              color: '#f3f4f6',
               fontWeight: 600,
               marginBottom: '4px',
               fontSize: '11px',
             }}
+            itemStyle={{ color: '#d1d5db' }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }}
+            wrapperStyle={{ paddingTop: '12px', fontSize: '11px', color: '#9ca3af' }}
             iconType="circle"
             iconSize={8}
+            formatter={(value) => <span style={{ color: '#9ca3af' }}>{value}</span>}
           />
           {areas.map((area) => (
             <Area
