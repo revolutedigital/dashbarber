@@ -34,59 +34,66 @@ export const AreaChart = memo(function AreaChart({
   title,
   data,
   areas,
-  height = 280,
-  formatValue = (v) => v.toString(),
+  height = 220,
+  formatValue = (v) => v.toLocaleString('pt-BR'),
   stacked = false,
 }: AreaChartProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <ResponsiveContainer width="100%" height={height}>
-        <RechartsAreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <RechartsAreaChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
           <defs>
             {areas.map((area) => (
               <linearGradient key={`gradient-${area.key}`} id={`areaGradient-${area.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={area.color} stopOpacity={0.4} />
-                <stop offset="95%" stopColor={area.color} stopOpacity={0.05} />
+                <stop offset="5%" stopColor={area.color} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={area.color} stopOpacity={0.02} />
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} vertical={false} />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="hsl(var(--border))"
+            strokeOpacity={0.4}
+            vertical={false}
+          />
           <XAxis
             dataKey="day"
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             tickLine={false}
             axisLine={false}
-            dy={10}
+            dy={8}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={formatValue}
-            width={60}
+            tickFormatter={(v) => {
+              if (v >= 1000000) return `${(v / 1000000).toFixed(0)}M`
+              if (v >= 1000) return `${(v / 1000).toFixed(0)}k`
+              return v.toString()
+            }}
+            width={45}
           />
           <Tooltip
-            formatter={(value) => [formatValue(Number(value))]}
+            formatter={(value, name) => [formatValue(Number(value)), name]}
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
-              borderRadius: '12px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-              padding: '12px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              padding: '8px 12px',
+              fontSize: '12px',
             }}
             labelStyle={{
               color: 'hsl(var(--foreground))',
               fontWeight: 600,
-              marginBottom: '8px',
-            }}
-            itemStyle={{
-              color: 'hsl(var(--foreground))',
-              fontSize: '13px',
+              marginBottom: '4px',
+              fontSize: '11px',
             }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '20px' }}
+            wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }}
             iconType="circle"
             iconSize={8}
           />
