@@ -3,7 +3,7 @@
 import { memo, useState } from 'react'
 import { Calendar, ChevronDown } from 'lucide-react'
 
-export type DateRange = 'today' | '7d' | '14d' | '30d' | 'all'
+export type DateRange = 'yesterday' | 'today' | 'last2days' | 'last3days' | '7d' | '14d' | '30d' | 'all'
 
 interface DateFilterProps {
   value: DateRange
@@ -11,7 +11,10 @@ interface DateFilterProps {
 }
 
 const options: { value: DateRange; label: string }[] = [
+  { value: 'yesterday', label: 'Ontem' },
   { value: 'today', label: 'Hoje' },
+  { value: 'last2days', label: 'Ultimos 2 dias' },
+  { value: 'last3days', label: 'Ultimos 3 dias' },
   { value: '7d', label: '7 dias' },
   { value: '14d', label: '14 dias' },
   { value: '30d', label: '30 dias' },
@@ -79,7 +82,10 @@ function parseDate(day: string, referenceYear: number): Date | null {
 // Helper para obter o numero de dias do filtro
 export function getDateRangeDays(range: DateRange): number {
   switch (range) {
+    case 'yesterday': return 1
     case 'today': return 1
+    case 'last2days': return 2
+    case 'last3days': return 3
     case '7d': return 7
     case '14d': return 14
     case '30d': return 30
@@ -96,18 +102,36 @@ export function filterDataByDateRange<T extends { day: string }>(
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const daysBack = getDateRangeDays(range)
-
-  const startDate = new Date(today)
-  startDate.setDate(startDate.getDate() - daysBack)
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
 
   return data.filter(item => {
     const itemDate = parseDate(item.day, now.getFullYear())
     if (!itemDate) return true
 
+    // Filtros especificos
     if (range === 'today') {
       return itemDate.getTime() === today.getTime()
     }
+
+    if (range === 'yesterday') {
+      return itemDate.getTime() === yesterday.getTime()
+    }
+
+    if (range === 'last2days') {
+      return itemDate.getTime() === today.getTime() || itemDate.getTime() === yesterday.getTime()
+    }
+
+    if (range === 'last3days') {
+      const twoDaysAgo = new Date(today)
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+      return itemDate >= twoDaysAgo && itemDate <= today
+    }
+
+    // Filtros de X dias (7d, 14d, 30d)
+    const daysBack = getDateRangeDays(range)
+    const startDate = new Date(today)
+    startDate.setDate(startDate.getDate() - daysBack + 1)
 
     return itemDate >= startDate && itemDate <= today
   })

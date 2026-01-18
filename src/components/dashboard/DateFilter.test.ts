@@ -2,8 +2,20 @@ import { describe, it, expect } from 'vitest'
 import { filterDataByDateRange, filterDataByPreviousPeriod, getDateRangeDays } from './DateFilter'
 
 describe('getDateRangeDays', () => {
+  it('should return 1 for yesterday', () => {
+    expect(getDateRangeDays('yesterday')).toBe(1)
+  })
+
   it('should return 1 for today', () => {
     expect(getDateRangeDays('today')).toBe(1)
+  })
+
+  it('should return 2 for last2days', () => {
+    expect(getDateRangeDays('last2days')).toBe(2)
+  })
+
+  it('should return 3 for last3days', () => {
+    expect(getDateRangeDays('last3days')).toBe(3)
   })
 
   it('should return 7 for 7d', () => {
