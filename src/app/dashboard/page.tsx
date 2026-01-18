@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { Activity } from 'lucide-react'
 
@@ -13,11 +13,18 @@ import {
   ChartsSection,
   FunnelComparison,
   CustomMetricsSection,
+  DataTable,
+  filterDataByDateRange,
+  filterDataByPreviousPeriod,
 } from '@/components/dashboard'
+import type { DateRange } from '@/components/dashboard'
 
 import { useDashboardConfig } from '@/hooks/useDashboardConfig'
+import { useDashboardData } from '@/hooks/useDashboardData'
+import { useToast } from '@/components/ui/toast'
 import { calculateFunnelTotals } from '@/lib/calculations'
-import { Funnel, MetaAdsData, FunnelTotals, ApiResponse, CustomMetric } from '@/types/metrics'
+import { exportToCSV } from '@/lib/export'
+import { Funnel, MetaAdsData, FunnelTotals, CustomMetric } from '@/types/metrics'
 
 interface FunnelWithColor extends Funnel {
   color?: string
@@ -46,16 +53,23 @@ const mockFunnels: Funnel[] = [
 ]
 
 export default function DashboardPage() {
-  const [funnels, setFunnels] = useState<FunnelWithColor[]>(mockFunnels)
   const [selectedFunnel, setSelectedFunnel] = useState<string>('all')
-  const [lastUpdated, setLastUpdated] = useState<string>('')
-  const [loading, setLoading] = useState(false)
-  const [usingMock, setUsingMock] = useState(true)
+  const [dateRange, setDateRange] = useState<DateRange>('all')
+  const [isDark, setIsDark] = useState(true)
 
   // Modais
   const [showMetricModal, setShowMetricModal] = useState(false)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+
+  // Dark mode effect
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDark])
 
   const {
     config,
@@ -68,58 +82,61 @@ export default function DashboardPage() {
     calculateGoalProgress,
   } = useDashboardConfig()
 
-  const fetchData = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/data', {
-        signal,
-        headers: {
-          'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
-        },
-      })
-      if (response.ok) {
-        const result: ApiResponse = await response.json()
-        if (result.funnels && result.funnels.length > 0) {
-          setFunnels(result.funnels)
-          setLastUpdated(result.lastUpdated)
-          setUsingMock(false)
-        }
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return
-      }
-      console.log('Usando dados de demonstracao')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { addToast } = useToast()
 
+  // SWR para buscar dados
+  const { data: apiData, error: apiError, isLoading, isValidating, refresh } = useDashboardData()
+
+  // Mostrar toasts baseado no estado do SWR
+  const prevLoadingRef = React.useRef(false)
   useEffect(() => {
-    const abortController = new AbortController()
-    fetchData(abortController.signal)
-
-    const interval = setInterval(() => {
-      fetchData(abortController.signal)
-    }, 5 * 60 * 1000)
-
-    return () => {
-      abortController.abort()
-      clearInterval(interval)
+    if (prevLoadingRef.current && !isLoading && !apiError && apiData) {
+      addToast('Dados atualizados com sucesso', 'success', 3000)
     }
-  }, [fetchData])
+    if (apiError) {
+      addToast('Usando dados de demonstracao', 'warning', 4000)
+    }
+    prevLoadingRef.current = isLoading
+  }, [isLoading, apiError, apiData, addToast])
+
+  // Dados efetivos (API ou mock)
+  const funnels: FunnelWithColor[] = apiData?.funnels || mockFunnels
+  const lastUpdated = apiData?.lastUpdated || ''
+  const usingMock = !apiData?.funnels
+  const loading = isLoading || isValidating
 
   const filteredData = useMemo((): MetaAdsData[] => {
+    let data: MetaAdsData[]
     if (selectedFunnel === 'all') {
-      return funnels.flatMap(f => f.data)
+      data = funnels.flatMap(f => f.data)
+    } else {
+      const funnel = funnels.find(f => f.id === selectedFunnel)
+      data = funnel?.data || []
     }
-    const funnel = funnels.find(f => f.id === selectedFunnel)
-    return funnel?.data || []
-  }, [funnels, selectedFunnel])
+    // Aplicar filtro de periodo
+    return filterDataByDateRange(data, dateRange)
+  }, [funnels, selectedFunnel, dateRange])
 
   const totals = useMemo((): FunnelTotals => {
     return calculateFunnelTotals(filteredData)
   }, [filteredData])
+
+  // Dados do periodo anterior para comparacao
+  const previousData = useMemo((): MetaAdsData[] => {
+    let data: MetaAdsData[]
+    if (selectedFunnel === 'all') {
+      data = funnels.flatMap(f => f.data)
+    } else {
+      const funnel = funnels.find(f => f.id === selectedFunnel)
+      data = funnel?.data || []
+    }
+    return filterDataByPreviousPeriod(data, dateRange)
+  }, [funnels, selectedFunnel, dateRange])
+
+  const previousTotals = useMemo((): FunnelTotals | null => {
+    if (previousData.length === 0 || dateRange === 'all') return null
+    return calculateFunnelTotals(previousData)
+  }, [previousData, dateRange])
 
   const chartData = useMemo(() => {
     return filteredData.map(d => ({
@@ -151,6 +168,19 @@ export default function DashboardPage() {
   const handleToggleSettings = useCallback(() => {
     setShowSettings(prev => !prev)
   }, [])
+
+  const handleDateRangeChange = useCallback((value: DateRange) => {
+    setDateRange(value)
+  }, [])
+
+  const handleToggleTheme = useCallback(() => {
+    setIsDark(prev => !prev)
+  }, [])
+
+  const handleExport = useCallback(() => {
+    exportToCSV(filteredData, `dashbarber-${dateRange}-${new Date().toISOString().split('T')[0]}`)
+    addToast('Dados exportados com sucesso', 'success', 3000)
+  }, [filteredData, dateRange, addToast])
 
   const handleOpenMetricModal = useCallback(() => {
     setShowMetricModal(true)
@@ -189,11 +219,16 @@ export default function DashboardPage() {
         funnels={funnels}
         selectedFunnel={selectedFunnel}
         onFunnelChange={handleFunnelChange}
+        dateRange={dateRange}
+        onDateRangeChange={handleDateRangeChange}
         showSettings={showSettings}
         onToggleSettings={handleToggleSettings}
         loading={loading}
-        onRefresh={fetchData}
+        onRefresh={refresh}
         usingMock={usingMock}
+        isDark={isDark}
+        onToggleTheme={handleToggleTheme}
+        onExport={handleExport}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -217,7 +252,7 @@ export default function DashboardPage() {
         {/* Content */}
         <div className="space-y-8">
           {/* KPIs */}
-          <KPISection totals={totals} />
+          <KPISection totals={totals} previousTotals={previousTotals} />
 
           {/* Settings Panel */}
           {showSettings && (
@@ -250,6 +285,12 @@ export default function DashboardPage() {
 
           {/* Charts */}
           <ChartsSection chartData={chartData} />
+
+          {/* Data Table */}
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Dados Detalhados</h2>
+            <DataTable data={filteredData} />
+          </section>
 
           {/* Funnel Comparison */}
           <FunnelComparison funnels={funnels} selectedFunnel={selectedFunnel} />

@@ -63,6 +63,30 @@ export const DateFilter = memo(function DateFilter({ value, onChange }: DateFilt
 
 DateFilter.displayName = 'DateFilter'
 
+// Helper para parsear data no formato DD/MM ou DD/MM/YYYY
+function parseDate(day: string, referenceYear: number): Date | null {
+  const parts = day.split('/')
+  if (parts.length === 3) {
+    const [d, m, y] = parts.map(Number)
+    return new Date(y, m - 1, d)
+  } else if (parts.length === 2) {
+    const [d, m] = parts.map(Number)
+    return new Date(referenceYear, m - 1, d)
+  }
+  return null
+}
+
+// Helper para obter o numero de dias do filtro
+export function getDateRangeDays(range: DateRange): number {
+  switch (range) {
+    case 'today': return 1
+    case '7d': return 7
+    case '14d': return 14
+    case '30d': return 30
+    case 'all': return 0
+  }
+}
+
 // Helper para filtrar dados por periodo
 export function filterDataByDateRange<T extends { day: string }>(
   data: T[],
@@ -72,47 +96,45 @@ export function filterDataByDateRange<T extends { day: string }>(
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-  let daysBack = 0
-  switch (range) {
-    case 'today':
-      daysBack = 0
-      break
-    case '7d':
-      daysBack = 7
-      break
-    case '14d':
-      daysBack = 14
-      break
-    case '30d':
-      daysBack = 30
-      break
-  }
+  const daysBack = getDateRangeDays(range)
 
   const startDate = new Date(today)
   startDate.setDate(startDate.getDate() - daysBack)
 
   return data.filter(item => {
-    // Parse DD/MM/YYYY ou DD/MM format
-    const parts = item.day.split('/')
-    let itemDate: Date
-
-    if (parts.length === 3) {
-      // DD/MM/YYYY
-      const [day, month, year] = parts.map(Number)
-      itemDate = new Date(year, month - 1, day)
-    } else if (parts.length === 2) {
-      // DD/MM - assume ano atual
-      const [day, month] = parts.map(Number)
-      itemDate = new Date(now.getFullYear(), month - 1, day)
-    } else {
-      return true // Se nao conseguir parsear, inclui
-    }
+    const itemDate = parseDate(item.day, now.getFullYear())
+    if (!itemDate) return true
 
     if (range === 'today') {
       return itemDate.getTime() === today.getTime()
     }
 
     return itemDate >= startDate && itemDate <= today
+  })
+}
+
+// Helper para obter dados do periodo anterior (para comparacao)
+export function filterDataByPreviousPeriod<T extends { day: string }>(
+  data: T[],
+  range: DateRange
+): T[] {
+  if (range === 'all') return []
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const daysBack = getDateRangeDays(range)
+
+  // Periodo anterior: do mesmo tamanho, terminando onde o periodo atual comeca
+  const endDate = new Date(today)
+  endDate.setDate(endDate.getDate() - daysBack - 1)
+
+  const startDate = new Date(endDate)
+  startDate.setDate(startDate.getDate() - daysBack + 1)
+
+  return data.filter(item => {
+    const itemDate = parseDate(item.day, now.getFullYear())
+    if (!itemDate) return false
+
+    return itemDate >= startDate && itemDate <= endDate
   })
 }
