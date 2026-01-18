@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import { PieTooltip } from './CustomTooltip'
 
 interface PieChartData {
   name: string
@@ -31,59 +32,80 @@ export const PieChart = memo(function PieChart({
 }: PieChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0)
 
+  // Sort by value for better visual hierarchy
+  const sortedData = [...data].sort((a, b) => b.value - a.value)
+
   return (
     <div className="space-y-3">
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      <div className="flex items-center gap-4">
-        <div className="w-[140px] h-[140px] flex-shrink-0">
+      <div className="flex items-center gap-6">
+        <div className="w-[140px] h-[140px] flex-shrink-0 relative">
+          {/* Center total */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div className="text-center">
+              <p className="text-lg font-bold text-foreground tabular-nums">{formatValue(total)}</p>
+              <p className="text-[10px] text-muted-foreground">Total</p>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsPieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={40}
+                innerRadius={42}
                 outerRadius={65}
-                paddingAngle={2}
+                paddingAngle={3}
                 dataKey="value"
                 strokeWidth={0}
+                animationBegin={0}
+                animationDuration={800}
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    className="transition-all duration-200 hover:opacity-80"
+                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                  />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value) => [formatValue(Number(value))]}
-                contentStyle={{
-                  backgroundColor: '#1f2937',
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                  padding: '8px 12px',
-                  fontSize: '12px',
-                }}
-                labelStyle={{ color: '#f3f4f6' }}
-                itemStyle={{ color: '#d1d5db' }}
-              />
+              <Tooltip content={<PieTooltip formatValue={formatValue} />} />
             </RechartsPieChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="flex-1 space-y-1.5">
-          {data.map((item) => {
+        <div className="flex-1 space-y-2">
+          {sortedData.map((item, index) => {
             const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0'
+            const isTop = index === 0
+
             return (
-              <div key={item.name} className="flex items-center justify-between text-sm py-1">
-                <div className="flex items-center gap-2">
+              <div
+                key={item.name}
+                className={`
+                  flex items-center justify-between py-1.5 px-2 rounded-lg
+                  ${isTop ? 'bg-muted/50' : ''}
+                  transition-colors hover:bg-muted/30
+                `}
+              >
+                <div className="flex items-center gap-2 min-w-0">
                   <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-2 ring-white/10"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-muted-foreground text-xs">{item.name}</span>
+                  <span className="text-muted-foreground text-xs truncate">{item.name}</span>
                 </div>
-                <span className="text-foreground font-medium text-xs tabular-nums">
-                  {percentage}%
-                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-foreground font-semibold text-xs tabular-nums">
+                    {percentage}%
+                  </span>
+                  {isTop && (
+                    <span className="text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">
+                      TOP
+                    </span>
+                  )}
+                </div>
               </div>
             )
           })}

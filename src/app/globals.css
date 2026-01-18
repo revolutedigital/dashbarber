@@ -382,3 +382,219 @@
 .animate-spin-slow {
   animation: spin-slow 3s linear infinite;
 }
+
+/* ============================================
+   2026 DASHBOARD DESIGN SYSTEM
+   ============================================ */
+
+/* Glassmorphism utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-card {
+  background: rgba(18, 18, 26, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Neumorphism subtle */
+.neu-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.05));
+  box-shadow:
+    8px 8px 24px rgba(0, 0, 0, 0.08),
+    -8px -8px 24px rgba(255, 255, 255, 0.02);
+}
+
+.dark .neu-card {
+  box-shadow:
+    8px 8px 24px rgba(0, 0, 0, 0.4),
+    -8px -8px 24px rgba(255, 255, 255, 0.02);
+}
+
+/* Improved focus states for accessibility */
+.focus-visible-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: #475569;
+  }
+
+  .dark {
+    --border: #64748b;
+  }
+}
+
+/* Smooth number transitions */
+.number-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Metric card hover lift */
+.metric-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Status indicators with pulse */
+.status-dot {
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.3;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Data table zebra with hover */
+.table-row-interactive {
+  transition: background-color 0.15s ease;
+}
+
+.table-row-interactive:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark .table-row-interactive:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.table-row-interactive:hover {
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+/* Loading shimmer enhanced */
+@keyframes shimmer-enhanced {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-enhanced {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-enhanced 1.5s ease-in-out infinite;
+}
+
+/* Micro-interaction: Button press */
+.btn-press {
+  transition: transform 0.1s ease;
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Chart axis label improvements */
+.recharts-cartesian-axis-tick-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dropdown animation */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdown-in 0.2s ease-out forwards;
+}
+
+/* Card reveal animation */
+@keyframes card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-reveal {
+  animation: card-reveal 0.5s ease-out forwards;
+}
+
+/* Staggered card reveal */
+.stagger-cards > * {
+  opacity: 0;
+  animation: card-reveal 0.5s ease-out forwards;
+}
+
+.stagger-cards > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-cards > *:nth-child(2) { animation-delay: 75ms; }
+.stagger-cards > *:nth-child(3) { animation-delay: 150ms; }
+.stagger-cards > *:nth-child(4) { animation-delay: 225ms; }
+
+/* Value highlight animation */
+@keyframes value-highlight {
+  0% { background-color: rgba(99, 102, 241, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.value-updated {
+  animation: value-highlight 1s ease-out;
+}
+
+/* Gradient text shimmer */
+@keyframes text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    #6366f1 0%,
+    #a855f7 25%,
+    #6366f1 50%,
+    #a855f7 75%,
+    #6366f1 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shimmer 3s linear infinite;
+}
+
+/* Responsive breakpoint for xs */
+@media (min-width: 475px) {
+  .xs\:inline {
+    display: inline;
+  }
+  .xs\:hidden {
+    display: none;
+  }
+}

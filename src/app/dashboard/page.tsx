@@ -252,7 +252,7 @@ export default function DashboardPage() {
         {/* Content */}
         <div className="space-y-8">
           {/* KPIs */}
-          <KPISection totals={totals} previousTotals={previousTotals} />
+          <KPISection totals={totals} previousTotals={previousTotals} chartData={chartData} />
 
           {/* Settings Panel */}
           {showSettings && (

@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { CustomMetric, Goal, DashboardConfig, FunnelTotals } from '@/types/metrics'
 import { safeEvaluate, EvalScope } from '@/lib/safe-eval'
 import { DashboardConfigSchema, CONFIG_VERSION } from '@/lib/schemas'
+import { ESSENTIAL_METRICS } from '@/lib/predefined-metrics'
 
-const STORAGE_KEY = 'dashboard_config_v2'
+const STORAGE_KEY = 'dashboard_config_v3' // Bumped version for new defaults
 
 // ============================================
 // VERSIONED CONFIG WITH MIGRATION
@@ -17,7 +18,7 @@ interface VersionedConfig extends DashboardConfig {
 
 const defaultConfig: VersionedConfig = {
   version: CONFIG_VERSION,
-  customMetrics: [],
+  customMetrics: ESSENTIAL_METRICS,
   goals: [],
 }
 
@@ -68,18 +69,29 @@ function migrateConfig(config: unknown): VersionedConfig {
     // Validate with schema
     const result = DashboardConfigSchema.safeParse(config)
     if (result.success) {
-      return result.data as VersionedConfig
+      const validConfig = result.data as VersionedConfig
+      // Se não tem métricas customizadas, adiciona as pré-definidas
+      if (validConfig.customMetrics.length === 0) {
+        validConfig.customMetrics = ESSENTIAL_METRICS
+      }
+      return validConfig
     }
     console.warn('Config validation failed, using defaults')
     return defaultConfig
   }
 
-  // Migration from v1 to v2
-  if (version === 1) {
-    console.info('Migrating config from v1 to v2')
+  // Migration from v1/v2 to v3 (with predefined metrics)
+  if (version === 1 || version === 2) {
+    console.info(`Migrating config from v${version} to v3`)
+    const existingMetrics = Array.isArray(rawConfig.customMetrics) ? rawConfig.customMetrics as CustomMetric[] : []
+
+    // Combina métricas existentes com as pré-definidas (evitando duplicatas)
+    const existingIds = new Set(existingMetrics.map(m => m.id))
+    const newMetrics = ESSENTIAL_METRICS.filter(m => !existingIds.has(m.id))
+
     return {
       version: CONFIG_VERSION,
-      customMetrics: Array.isArray(rawConfig.customMetrics) ? rawConfig.customMetrics as CustomMetric[] : [],
+      customMetrics: [...newMetrics, ...existingMetrics],
       goals: Array.isArray(rawConfig.goals) ? rawConfig.goals as Goal[] : [],
     }
   }

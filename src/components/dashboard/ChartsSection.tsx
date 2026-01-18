@@ -3,6 +3,7 @@
 import { memo, Suspense, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { formatCurrency, formatNumber } from '@/lib/calculations'
+import { BarChart3, Flame } from 'lucide-react'
 
 const LineChart = dynamic(
   () => import('@/components/charts/LineChart').then(mod => ({ default: mod.LineChart })),
@@ -36,6 +37,14 @@ const PieChart = dynamic(
   }
 )
 
+const WeekdayHeatmap = dynamic(
+  () => import('@/components/charts/WeekdayHeatmap').then(mod => ({ default: mod.WeekdayHeatmap })),
+  {
+    loading: () => <ChartSkeleton />,
+    ssr: false,
+  }
+)
+
 interface ChartData {
   day: string
   amountSpent: number
@@ -56,7 +65,27 @@ interface ChartsSectionProps {
 
 function ChartSkeleton() {
   return (
-    <div className="h-[280px] w-full skeleton rounded-lg" />
+    <div className="space-y-3">
+      <div className="h-4 w-32 skeleton-enhanced rounded" />
+      <div className="h-[200px] w-full skeleton-enhanced rounded-lg" />
+    </div>
+  )
+}
+
+// Card wrapper with glassmorphism
+function ChartCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`
+      bg-card/80 backdrop-blur-sm
+      border border-border/50
+      rounded-2xl p-5
+      transition-all duration-300 ease-out
+      hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5
+      group
+      ${className}
+    `}>
+      {children}
+    </div>
   )
 }
 
@@ -77,14 +106,21 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
   }, [chartData])
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-        <h3 className="text-lg font-semibold text-foreground">Analytics</h3>
+    <section className="space-y-6">
+      {/* Section Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-indigo-500/10">
+          <BarChart3 className="w-5 h-5 text-indigo-500" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Analytics</h2>
+          <p className="text-sm text-muted-foreground">Visualizacao detalhada das metricas</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5 hover-glow transition-all">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 stagger-cards">
+        <ChartCard>
           <Suspense fallback={<ChartSkeleton />}>
             <LineChart
               title="Investimento Diario"
@@ -93,11 +129,13 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
                 { key: 'amountSpent', label: 'Investimento', color: '#ef4444' },
               ]}
               formatValue={(v) => formatCurrency(v)}
+              showAverage
+              showAnnotations
             />
           </Suspense>
-        </div>
+        </ChartCard>
 
-        <div className="bg-card border border-border rounded-xl p-5 hover-glow transition-all">
+        <ChartCard>
           <Suspense fallback={<ChartSkeleton />}>
             <BarChart
               title="Compras por Dia"
@@ -107,11 +145,11 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
               ]}
             />
           </Suspense>
-        </div>
+        </ChartCard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5 hover-glow transition-all">
+        <ChartCard>
           <Suspense fallback={<ChartSkeleton />}>
             <AreaChart
               title="Alcance e Impressoes"
@@ -123,9 +161,9 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
               formatValue={(v) => formatNumber(v)}
             />
           </Suspense>
-        </div>
+        </ChartCard>
 
-        <div className="bg-card border border-border rounded-xl p-5 hover-glow transition-all">
+        <ChartCard>
           <Suspense fallback={<ChartSkeleton />}>
             <PieChart
               title="Distribuicao do Funil"
@@ -133,11 +171,11 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
               formatValue={(v) => formatNumber(v)}
             />
           </Suspense>
-        </div>
+        </ChartCard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5 hover-glow transition-all">
+        <ChartCard>
           <Suspense fallback={<ChartSkeleton />}>
             <LineChart
               title="CPA ao Longo do Tempo"
@@ -146,11 +184,13 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
                 { key: 'cpa', label: 'CPA', color: '#8b5cf6' },
               ]}
               formatValue={(v) => formatCurrency(v)}
+              showAverage
+              showAnnotations
             />
           </Suspense>
-        </div>
+        </ChartCard>
 
-        <div className="bg-card border border-border rounded-xl p-5 hover-glow transition-all">
+        <ChartCard>
           <Suspense fallback={<ChartSkeleton />}>
             <LineChart
               title="CPC e CPM"
@@ -160,11 +200,53 @@ export const ChartsSection = memo(function ChartsSection({ chartData }: ChartsSe
                 { key: 'cpm', label: 'CPM', color: '#6366f1' },
               ]}
               formatValue={(v) => formatCurrency(v)}
+              showAnnotations={false}
             />
           </Suspense>
+        </ChartCard>
+      </div>
+
+      {/* Heatmap Section */}
+      <div className="mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-xl bg-orange-500/10">
+            <Flame className="w-5 h-5 text-orange-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Analise Semanal</h2>
+            <p className="text-sm text-muted-foreground">Performance por dia da semana</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChartCard>
+            <Suspense fallback={<ChartSkeleton />}>
+              <WeekdayHeatmap
+                data={chartData}
+                metricKey="purchases"
+                title="Compras por Dia da Semana"
+                formatValue={(v) => v.toFixed(1)}
+                colorScheme="green"
+                higherIsBetter={true}
+              />
+            </Suspense>
+          </ChartCard>
+
+          <ChartCard>
+            <Suspense fallback={<ChartSkeleton />}>
+              <WeekdayHeatmap
+                data={chartData}
+                metricKey="cpa"
+                title="CPA por Dia da Semana"
+                formatValue={(v) => formatCurrency(v)}
+                colorScheme="purple"
+                higherIsBetter={false}
+              />
+            </Suspense>
+          </ChartCard>
         </div>
       </div>
-    </div>
+    </section>
   )
 })
 

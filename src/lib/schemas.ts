@@ -128,7 +128,7 @@ export const GoalSchema = z.object({
 // ============================================
 // VERSIONED CONFIG SCHEMA (for localStorage migration)
 // ============================================
-export const CONFIG_VERSION = 2
+export const CONFIG_VERSION = 3 // v3: added predefined metrics
 
 export const DashboardConfigSchema = z.object({
   version: z.number().default(CONFIG_VERSION),
