@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponseSchema } from '@/lib/schemas'
-import {
-  checkRateLimit,
-  resilientFetch,
-  getCircuitStatus,
-} from '@/lib/data-utils'
+import { checkRateLimit, getCircuitStatus } from '@/lib/data-utils'
 
 // ============================================
 // AUTHENTICATION
@@ -103,22 +99,29 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Resilient fetch com retry, circuit breaker, e timeout
-    const response = await resilientFetch(sheetUrl, {
-      timeoutMs: 30000, // 30 second timeout
-      retryOptions: {
-        maxRetries: 3,
-        baseDelayMs: 500,
-        maxDelayMs: 5000,
+    // Fetch com redirect manual para Google Apps Script
+    // O Google Apps Script faz redirect 302, precisamos seguir manualmente
+    let response = await fetch(sheetUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'Accept': 'application/json',
       },
-      circuitBreakerKey: 'google-sheets',
-      circuitBreakerOptions: {
-        failureThreshold: 5,
-        resetTimeoutMs: 30000,
-        halfOpenRequests: 3,
-      },
-      next: { revalidate: 300 }, // Cache de 5 minutos
     })
+
+    // Se for redirect, seguir manualmente
+    if (response.status === 302 || response.status === 301) {
+      const redirectUrl = response.headers.get('location')
+      if (redirectUrl) {
+        response = await fetch(redirectUrl, {
+          method: 'GET',
+          redirect: 'follow',
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+      }
+    }
 
     if (!response.ok) {
       const errorMessage = `Google Sheets API returned ${response.status}`
