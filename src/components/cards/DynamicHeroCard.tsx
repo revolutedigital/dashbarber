@@ -12,12 +12,11 @@ import {
   ShoppingCart,
   Users,
   MousePointer,
-  Eye,
   Zap,
   Settings2,
 } from 'lucide-react'
 import { FunnelTotals } from '@/types/metrics'
-import { formatCurrency, formatPercentage, formatNumber } from '@/lib/calculations'
+import { formatCurrency, formatNumber } from '@/lib/calculations'
 
 // Tipos de métricas suportadas como Hero
 export type HeroMetricType =
@@ -283,15 +282,13 @@ export const DynamicHeroCard = memo(function DynamicHeroCard({
   const isNegativeChange = change !== undefined && (config.higherIsBetter ? change < 0 : change > 0)
 
   const colorConfig = config.getColor(value)
-  const profit = totals.totalRevenue - totals.totalSpent
-  const profitMargin = totals.totalSpent > 0 ? (profit / totals.totalSpent) * 100 : 0
 
   return (
     <div className="relative overflow-hidden rounded-3xl p-1 bg-gradient-to-br from-white/10 to-white/5">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 blur-xl" />
 
       <div className={`
-        relative overflow-hidden rounded-[22px] p-6 sm:p-8
+        relative overflow-hidden rounded-[22px] p-6
         bg-gradient-to-br ${colorConfig.bg}
         shadow-2xl
       `}>
@@ -299,7 +296,6 @@ export const DynamicHeroCard = memo(function DynamicHeroCard({
         <div className="absolute inset-0 opacity-30">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-black/20 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/10 rounded-full blur-2xl animate-float" />
         </div>
 
         <div
@@ -312,9 +308,9 @@ export const DynamicHeroCard = memo(function DynamicHeroCard({
 
         <div className="relative z-10">
           {/* Header */}
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
+              <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
                 {config.icon}
               </div>
               <div>
@@ -354,9 +350,9 @@ export const DynamicHeroCard = memo(function DynamicHeroCard({
           </div>
 
           {/* Main Value */}
-          <div className="flex items-end gap-4 mb-6">
+          <div className="flex items-end justify-between">
             <div className="flex items-baseline gap-2">
-              <span className="text-6xl sm:text-7xl font-black text-white tracking-tight tabular-nums">
+              <span className="text-5xl sm:text-6xl font-black text-white tracking-tight tabular-nums">
                 {config.format(animatedValue)}
               </span>
               {config.suffix && (
@@ -365,58 +361,10 @@ export const DynamicHeroCard = memo(function DynamicHeroCard({
             </div>
 
             {trend.length > 1 && (
-              <div className="mb-2 opacity-80">
-                <Sparkline data={trend} color="rgba(255,255,255,0.9)" height={36} />
+              <div className="mb-1 opacity-80">
+                <Sparkline data={trend} color="rgba(255,255,255,0.9)" height={32} />
               </div>
             )}
-          </div>
-
-          {/* Secondary metrics */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 rounded-lg bg-emerald-500/30">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white/70 text-xs font-medium uppercase tracking-wide">Receita</span>
-              </div>
-              <p className="text-2xl font-bold text-white tabular-nums">
-                {formatCurrency(totals.totalRevenue)}
-              </p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 rounded-lg bg-orange-500/30">
-                  <DollarSign className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white/70 text-xs font-medium uppercase tracking-wide">Investido</span>
-              </div>
-              <p className="text-2xl font-bold text-white tabular-nums">
-                {formatCurrency(totals.totalSpent)}
-              </p>
-            </div>
-          </div>
-
-          {/* Profit bar */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-white/70 text-xs font-medium uppercase tracking-wide">Lucro Bruto</span>
-              <span className={`text-lg font-bold ${profit >= 0 ? 'text-white' : 'text-red-200'}`}>
-                {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
-              </span>
-            </div>
-            <div className="relative h-3 bg-black/20 rounded-full overflow-hidden">
-              <div
-                className="absolute inset-y-0 left-0 bg-white/90 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${Math.min(Math.max(profitMargin, 0), 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-xs text-white/50">
-              <span>0%</span>
-              <span className="font-semibold text-white/80">{profitMargin.toFixed(0)}% ROI</span>
-              <span>100%+</span>
-            </div>
           </div>
         </div>
       </div>
