@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
+import { SkipLinks } from "@/components/a11y";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,9 +44,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <SkipLinks />
+        <SessionProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </SessionProvider>
       </body>
     </html>
   );

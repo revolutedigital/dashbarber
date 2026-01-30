@@ -1,0 +1,432 @@
+// Revdata - Multi-tenant Analytics Platform
+// Schema for PostgreSQL (Railway)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// AUTHENTICATION (NextAuth.js v5)
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Auth relations
+  accounts Account[]
+  sessions Session[]
+
+  // Workspace membership
+  workspaces WorkspaceMember[]
+
+  // Audit trail
+  auditLogs AuditLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// WORKSPACE (TENANT) - Core Multi-tenancy
+// ============================================
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Settings stored as JSON (timezone, currency, branding)
+  settings Json?
+
+  // Relations
+  members          WorkspaceMember[]
+  adAccounts       AdAccountConnection[]
+  webhookEndpoints WebhookEndpoint[]
+  dailyMetrics     DailyMetric[]
+  salesData        SalesData[]
+  customMetrics    CustomMetric[]
+  goals            Goal[]
+  funnels          Funnel[]
+  apiKeys          ApiKey[]
+
+  @@index([slug])
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        Role     @default(VIEWER)
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+// ============================================
+// AD PLATFORM CONNECTIONS
+// ============================================
+
+model AdAccountConnection {
+  id          String     @id @default(cuid())
+  workspaceId String
+  platform    AdPlatform
+  accountId   String // Platform's account ID (e.g., act_123456789)
+  accountName String?
+
+  // OAuth tokens (encrypted at rest via application layer)
+  accessToken    String    @db.Text
+  refreshToken   String?   @db.Text
+  tokenExpiresAt DateTime?
+
+  // Sync status
+  lastSyncAt DateTime?
+  syncStatus SyncStatus @default(PENDING)
+  syncError  String?
+
+  // Settings
+  isActive      Boolean @default(true)
+  syncFrequency Int     @default(60) // minutes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  dailyMetrics DailyMetric[]
+
+  @@unique([workspaceId, platform, accountId])
+  @@index([workspaceId, platform])
+  @@index([syncStatus])
+}
+
+enum AdPlatform {
+  GOOGLE_ADS
+  META_ADS
+  TIKTOK_ADS
+  LINKEDIN_ADS
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SUCCESS
+  ERROR
+}
+
+// ============================================
+// METRICS & DATA STORAGE
+// ============================================
+
+model DailyMetric {
+  id          String   @id @default(cuid())
+  workspaceId String
+  adAccountId String
+  date        DateTime @db.Date
+
+  // Campaign hierarchy
+  campaignId   String?
+  campaignName String?
+  adSetId      String?
+  adSetName    String?
+  adId         String?
+  adName       String?
+
+  // Basic Metrics (aligned with existing MetaAdsData)
+  amountSpent      Decimal @db.Decimal(12, 2)
+  reach            Int
+  impressions      Int
+  clicksAll        Int
+  uniqueLinkClicks Int
+  purchases        Int
+  purchaseValue    Decimal? @db.Decimal(12, 2)
+  leads            Int?
+  addToCart        Int?
+  initiateCheckout Int?
+  landingPageViews Int?
+
+  // Video Metrics
+  videoViews3s   Int?
+  videoThruPlays Int?
+  videoP25       Int?
+  videoP50       Int?
+  videoP75       Int?
+  videoP100      Int?
+
+  // Calculated metrics (stored for query performance)
+  cpm            Decimal? @db.Decimal(10, 4)
+  cpc            Decimal? @db.Decimal(10, 4)
+  cpa            Decimal? @db.Decimal(10, 4)
+  ctr            Decimal? @db.Decimal(8, 6)
+  conversionRate Decimal? @db.Decimal(8, 6)
+  roas           Decimal? @db.Decimal(10, 4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  adAccount AdAccountConnection @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([adAccountId, date, campaignId, adSetId, adId])
+  @@index([workspaceId, date])
+  @@index([adAccountId, date])
+}
+
+// ============================================
+// WEBHOOK & SALES DATA
+// ============================================
+
+model WebhookEndpoint {
+  id          String          @id @default(cuid())
+  workspaceId String
+  name        String
+  platform    WebhookPlatform
+
+  // Security
+  secretKey String // For HMAC signature verification
+  isActive  Boolean @default(true)
+
+  // Stats
+  lastReceivedAt DateTime?
+  totalReceived  Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  salesData SalesData[]
+
+  @@index([workspaceId])
+}
+
+enum WebhookPlatform {
+  HOTMART
+  KIWIFY
+  EDUZZ
+  MONETIZZE
+  SHOPIFY
+  STRIPE
+  CUSTOM
+}
+
+model SalesData {
+  id          String @id @default(cuid())
+  workspaceId String
+  webhookId   String
+
+  // Sale details
+  transactionId String
+  status        SaleStatus
+  amount        Decimal    @db.Decimal(12, 2)
+  currency      String     @default("BRL")
+  productId     String?
+  productName   String?
+
+  // Customer (hashed/partial for privacy)
+  customerEmail   String?
+  customerCountry String?
+
+  // Attribution (UTM params)
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+
+  // Timestamps
+  saleDate   DateTime
+  receivedAt DateTime @default(now())
+
+  // Raw payload for debugging
+  rawPayload Json?
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  webhook   WebhookEndpoint @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@unique([webhookId, transactionId])
+  @@index([workspaceId, saleDate])
+  @@index([workspaceId, utmCampaign])
+}
+
+enum SaleStatus {
+  PENDING
+  APPROVED
+  REFUNDED
+  CHARGEBACK
+  CANCELLED
+}
+
+// ============================================
+// USER CONFIGURATIONS (migrated from localStorage)
+// ============================================
+
+model Funnel {
+  id          String  @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+
+  // Filter criteria (JSON for flexibility)
+  filterCriteria Json? // { campaigns: [], adSets: [], dateRange: {} }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model CustomMetric {
+  id          String       @id @default(cuid())
+  workspaceId String
+  name        String
+  formula     String       @db.Text
+  format      MetricFormat
+  description String?
+  color       String?
+  isSystem    Boolean      @default(false) // Predefined vs user-created
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  goals     Goal[]
+
+  @@index([workspaceId])
+}
+
+enum MetricFormat {
+  CURRENCY
+  PERCENTAGE
+  NUMBER
+  DECIMAL
+}
+
+model Goal {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  customMetricId String?
+  metricKey      String // Built-in metric key or custom metric id
+  metricName     String
+  targetValue    Decimal  @db.Decimal(12, 2)
+  targetType     GoalType
+  funnelId       String? // Specific funnel or null for all
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customMetric CustomMetric? @relation(fields: [customMetricId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+}
+
+enum GoalType {
+  MIN // Lower is better (CPA, CPL)
+  MAX // Higher is better (ROAS, sales)
+}
+
+// ============================================
+// API KEYS & AUDIT
+// ============================================
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  keyHash     String   @unique // Hashed API key (never store plaintext)
+  keyPrefix   String // First 8 chars for identification (e.g., "rv_abc123")
+  scopes      String[] // ["read:metrics", "write:webhooks"]
+
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([workspaceId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  userId      String?
+  action      String // "workspace.created", "ad_account.connected"
+  resource    String // "workspace", "ad_account"
+  resourceId  String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action])
+}

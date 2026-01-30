@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// Bundle analyzer (only when ANALYZE=true)
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -44,6 +49,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker
+  output: 'standalone',
+
+  // Security headers
   async headers() {
     return [
       {
@@ -52,7 +61,18 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // Remove X-Powered-By header
   poweredByHeader: false,
+
+  // Strict mode for better error catching
+  reactStrictMode: true,
+
+  // Experimental features
+  experimental: {
+    // Enable React Compiler when available
+    // reactCompiler: true,
+  },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

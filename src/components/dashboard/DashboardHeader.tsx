@@ -4,6 +4,7 @@ import { memo, useState } from 'react'
 import { BarChart3, ChevronDown, RefreshCw, Settings, Sun, Moon, Download, Menu, X } from 'lucide-react'
 import { Funnel } from '@/types/metrics'
 import { DateFilter, DateRange } from './DateFilter'
+import { WorkspaceSwitcher } from '@/components/workspace/WorkspaceSwitcher'
 
 interface FunnelWithColor extends Funnel {
   color?: string
@@ -53,16 +54,18 @@ export const DashboardHeader = memo(function DashboardHeader({
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-foreground">
-                DashBarber
+                RevData
               </h1>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground">by RevData</span>
-                <span className="text-muted-foreground/30">|</span>
                 <div className={`w-1.5 h-1.5 rounded-full ${usingMock ? 'bg-amber-500' : 'bg-emerald-500'} pulse-live`} />
                 <span className="text-[9px] sm:text-[10px] text-muted-foreground">
                   {usingMock ? 'Demo' : 'Live'}
                 </span>
               </div>
+            </div>
+            <div className="hidden sm:block border-l border-border h-8 mx-1" />
+            <div className="hidden sm:block">
+              <WorkspaceSwitcher />
             </div>
           </div>
 

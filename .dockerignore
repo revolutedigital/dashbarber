@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+e2e
+playwright-report
+test-results
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Development
+.env*.local
+.env.development
+*.log
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.docker
+
+# Documentation
+*.md
+LICENSE
+
+# Misc
+.DS_Store
+*.pem

@@ -18,9 +18,18 @@ const fetcher = async (url: string): Promise<ApiResponse> => {
   return response.json()
 }
 
-export function useDashboardData() {
+/**
+ * Fetch dashboard data.
+ * When workspaceId is provided, fetches from workspace-scoped API.
+ * Otherwise falls back to legacy /api/data endpoint.
+ */
+export function useDashboardData(workspaceId?: string | null) {
+  const url = workspaceId
+    ? `/api/v1/workspaces/${workspaceId}/metrics`
+    : '/api/data'
+
   const { data, error, isLoading, isValidating, mutate } = useSWR<ApiResponse>(
-    '/api/data',
+    url,
     fetcher,
     {
       revalidateOnFocus: false,
